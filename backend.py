@@ -127,9 +127,14 @@ def get_average(conn: sqlite3.Connection):
 
 def get_throughput(conn: sqlite3.Connection) -> plt:
     c = conn.cursor()
-    c.execute("SELECT packet_size, packet_time, user FROM packets")
+    c.execute("SELECT packet_size, packet_time FROM packets")
     packets = c.fetchall()
     # visuzalize throughput with bar chart using seaborn
-    df = pd.DataFrame(packets, columns=['packet_size', 'packet_time', 'user'])
-    seaborn.barplot(x='packet_time', y='packet_size', data=df, hue='user')
+    df = pd.DataFrame(packets, columns=['packet_size', 'packet_time'])
+    # set index as pakcet_time
+    # ValueError: cannot reindex on an axis with duplicate labels
+    df.set_index('packet_time', inplace=True)
+    df = df.reindex(list(range(df.index.min(), df.index.max() + 1)), fill_value=0.0)
+    df_rolling_avg = df.rolling(100).mean()
+    seaborn.lineplot(x='packet_time', y='packet_size', data=df_rolling_avg)
     return plt

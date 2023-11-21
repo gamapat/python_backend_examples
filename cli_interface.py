@@ -61,7 +61,7 @@ def get_total(args, conn: sqlite3.Connection):
 
 def get_average(args, conn: sqlite3.Connection):
     average = backend.get_average(conn)
-    print(f'average packet size: {average[0]}')
+    print(f'average packet size: {average}')
 
 def get_throughput(args, conn: sqlite3.Connection):
     local_plt = backend.get_throughput(conn)
