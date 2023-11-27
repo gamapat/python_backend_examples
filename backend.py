@@ -4,11 +4,13 @@ import seaborn
 import pandas as pd
 from matplotlib import pyplot as plt
 
-SALT = 'salt'
+def connect_db():
+    conn = sqlite3.connect('database.db')
+    return conn
 
 def create_tables(conn: sqlite3.Connection):
     c = conn.cursor()
-    # Create table for users. Passwords should be hashed and salted.
+    # Create table for users. Passwords should be hashed.
     c.execute('''CREATE TABLE IF NOT EXISTS users
                 (username text, password text, is_admin integer)''')
     
@@ -19,49 +21,31 @@ def create_tables(conn: sqlite3.Connection):
     conn.commit()
 
 # add admin user with password admin
-def add_admin(conn: sqlite3.Connection):   
-    c = conn.cursor()
-    password = 'admin'
-    # check if admin user exists
-    c.execute("SELECT * FROM users WHERE username = 'admin'")
-    user = c.fetchone()
-    if user is not None:
+def add_admin(conn: sqlite3.Connection):
+    if check_user_exists('admin', conn):
         return
 
-
     # hash password with sha256
-    password = password + SALT
-    password = hashlib.sha256(password.encode('utf-8')).hexdigest()
+    password = hashlib.sha256('admin'.encode('utf-8')).hexdigest()
 
+    c = conn.cursor()
     c.execute("INSERT INTO users VALUES ('admin', ?, 1)", (password,))
     conn.commit()
 
 
-# check user and password against database
-def login_args(args, conn: sqlite3.Connection):
-    username = args.login_username
-    password = args.login_password
-    return login(username, password, conn)
-
-def login(username, password, conn: sqlite3.Connection):
-    # hash password with sha256
-    password = password + SALT
-    password = hashlib.sha256(password.encode('utf-8')).hexdigest()
-
+def login(username, hashed_password, conn: sqlite3.Connection):
     # check if user exists
     c = conn.cursor()
     c.execute("SELECT * FROM users WHERE username = ?", (username,))
     user = c.fetchone()
     if user is None:
-        print('User does not exist')
-        exit()
+        raise RuntimeError('User does not exist')
 
     # check if password is correct
-    c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
+    c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hashed_password))
     user = c.fetchone()
     if user is None:
-        print('Password is incorrect')
-        exit()
+        raise RuntimeError('Password is incorrect')
 
 def check_admin(username, conn: sqlite3.Connection):
     # check if user is admin
@@ -69,15 +53,11 @@ def check_admin(username, conn: sqlite3.Connection):
     c.execute("SELECT * FROM users WHERE username = ? AND is_admin = 1", (username,))
     user = c.fetchone()
     if user is None:
-        print('User is not admin')
-        exit()
+        raise RuntimeError('User is not admin')
 
-def add_user(username, password, conn: sqlite3.Connection):
-    # hash password with sha256
-    password = password + SALT
-    password = hashlib.sha256(password.encode('utf-8')).hexdigest()
+def add_user(username, hashed_password, conn: sqlite3.Connection):
     c = conn.cursor()
-    c.execute("INSERT INTO users VALUES (?, ?, 0)", (username, password))
+    c.execute("INSERT INTO users VALUES (?, ?, 0)", (username, hashed_password))
     conn.commit()
 
 def remove_user(username, conn: sqlite3.Connection):
@@ -91,6 +71,12 @@ def list_users(conn: sqlite3.Connection):
     c.execute("SELECT * FROM users")
     users = c.fetchall()
     return users
+
+def check_user_exists(username, conn: sqlite3.Connection):
+    c = conn.cursor()
+    c.execute("SELECT * FROM users WHERE username = ?", (username,))
+    user = c.fetchone()
+    return user is not None
 
 def add_packet(size, time, username, conn: sqlite3.Connection):
     c = conn.cursor()
@@ -125,16 +111,32 @@ def get_average(conn: sqlite3.Connection):
     average = c.fetchone()
     return average[0]
 
+def get_packet_plot(conn: sqlite3.Connection) -> plt:
+    c = conn.cursor()
+    c.execute("SELECT packet_size, packet_time FROM packets")
+    packets = c.fetchall()
+    # visuzalize throughput with scatter plot using seaborn
+    df = pd.DataFrame(packets, columns=['packet_size', 'packet_time'])
+    # set index as pakcet_time
+    df.set_index('packet_time', inplace=True)
+    df = df.groupby('packet_time').sum()
+    plt.clf()
+    seaborn.scatterplot(x='packet_time', y='packet_size', data=df)
+    return plt
+
 def get_throughput(conn: sqlite3.Connection) -> plt:
     c = conn.cursor()
     c.execute("SELECT packet_size, packet_time FROM packets")
     packets = c.fetchall()
-    # visuzalize throughput with bar chart using seaborn
+    # visuzalize throughput with line plot using seaborn
     df = pd.DataFrame(packets, columns=['packet_size', 'packet_time'])
     # set index as pakcet_time
-    # ValueError: cannot reindex on an axis with duplicate labels
     df.set_index('packet_time', inplace=True)
+    df = df.groupby('packet_time').sum()
     df = df.reindex(list(range(df.index.min(), df.index.max() + 1)), fill_value=0.0)
-    df_rolling_avg = df.rolling(100).mean()
-    seaborn.lineplot(x='packet_time', y='packet_size', data=df_rolling_avg)
+    df_rolling_avg = df.rolling(1000).sum()
+    # rename column to throughput bytes/s
+    df_rolling_avg.rename(columns={'packet_size': 'throughput bytes/s'}, inplace=True)
+    plt.clf()
+    seaborn.lineplot(x='packet_time', y='throughput bytes/s', data=df_rolling_avg)
     return plt

@@ -2,11 +2,14 @@ import sqlite3
 import argparse
 from functools import partial
 import backend
+import hashlib
 
 # check user and password against database
 def login(args, conn: sqlite3.Connection):
     username = args.login_username
     password = args.login_password
+    # hash password with sha256
+    password = hashlib.sha256(password.encode('utf-8')).hexdigest()
     return backend.login(username, password, conn)
 
 def check_admin(args, conn: sqlite3.Connection):
@@ -17,6 +20,8 @@ def add_user(args, conn: sqlite3.Connection):
     backend.check_admin(args.login_username, conn)
     username = args.username
     password = args.password
+    # hash password with sha256
+    password = hashlib.sha256(password.encode('utf-8')).hexdigest()
     backend.add_user(username, password, conn)
     print("User added")
 
@@ -35,7 +40,6 @@ def list_users(args, conn: sqlite3.Connection):
     # print users in a nice format
     for user in users:
         print(f"{user[0]}\t{user[1]}\t{user[2]}")
-
 
 def add_packet(args, conn: sqlite3.Connection):
     size = args.size
@@ -65,6 +69,10 @@ def get_average(args, conn: sqlite3.Connection):
 
 def get_throughput(args, conn: sqlite3.Connection):
     local_plt = backend.get_throughput(conn)
+    local_plt.show()
+    
+def get_packet_plot(args, conn: sqlite3.Connection):
+    local_plt = backend.get_packet_plot(conn)
     local_plt.show()
 
 def main():
@@ -106,6 +114,9 @@ def main():
     # add cli suboption to get info about vizualized throughput
     get_throughput_parser = subparsers.add_parser(name="get_throughput", help='get vizualized throughput')
 
+    # add cli suboption to get info about vizualized packets
+    get_visualized_packets_parser = subparsers.add_parser(name="get_packet_plot", help='get vizualized packets')
+
     conn = sqlite3.connect('database.db')
     add_user_parser.set_defaults(func=partial(add_user, conn=conn))
     remove_user_parser.set_defaults(func=partial(remove_user, conn=conn))
@@ -115,6 +126,7 @@ def main():
     get_total_parser.set_defaults(func=partial(get_total, conn=conn))
     get_average_parser.set_defaults(func=partial(get_average, conn=conn))
     get_throughput_parser.set_defaults(func=partial(get_throughput, conn=conn))
+    get_visualized_packets_parser.set_defaults(func=partial(get_packet_plot, conn=conn))
 
     backend.create_tables(conn)
     backend.add_admin(conn)

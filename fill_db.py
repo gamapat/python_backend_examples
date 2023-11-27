@@ -1,5 +1,8 @@
 import backend
 import sqlite3
+import hashlib
+import random
+import string
 
 conn = sqlite3.connect('database.db')
 backend.create_tables(conn)
@@ -12,15 +15,14 @@ for user in users:
         backend.remove_user(user[0], conn)
 
 # add 20 users with random names and passwords
-import random
-import string
 # store user creds in plaintext in json file
 with open('creds.json', 'w', encoding="utf-8") as f:
     user_creds = [{"un": "admin", "pw": "admin"}]
     for i in range(20):
         username = ''.join(random.choices(string.ascii_lowercase, k=10))
         password = ''.join(random.choices(string.ascii_lowercase, k=10))
-        backend.add_user(username, password, conn)
+        hashed_password = hashlib.sha256(password.encode('utf-8')).hexdigest()
+        backend.add_user(username, hashed_password, conn)
         user_creds.append({"un": username, "pw": password})
     import json
     json.dump(user_creds, f)
