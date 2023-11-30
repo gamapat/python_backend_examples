@@ -148,9 +148,9 @@ def get_throughput():
     fig = plt.gcf()
     fig.set_size_inches(12, 8)
     
-    plt.savefig('throughput.png')
+    plt.savefig('flask_throughput.png')
     # send file to client
-    return send_file('throughput.png', mimetype='image/png')
+    return send_file('flask_throughput.png', mimetype='image/png')
 
 
 # get packet plot
@@ -163,9 +163,9 @@ def get_packet_plot():
     fig = plt.gcf()
     fig.set_size_inches(12, 8)
     
-    plt.savefig('packet_plot.png')
+    plt.savefig('flask_packet_plot.png')
     # send file to client
-    return send_file('packet_plot.png', mimetype='image/png')
+    return send_file('flask_packet_plot.png', mimetype='image/png')
 
 if __name__ == '__main__':    
     parser = argparse.ArgumentParser(prog="flask_interface")

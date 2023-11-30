@@ -3,3 +3,4 @@ Flask-Cors
 Flask-JWT-Extended
 gevent
 requests
+tornado
