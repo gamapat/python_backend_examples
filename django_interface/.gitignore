@@ -1,0 +1,4 @@
+# django ignores
+*.pyc
+*.pyo
+db.sqlite3

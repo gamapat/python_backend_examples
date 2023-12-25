@@ -6,6 +6,7 @@ import backend
 from http import HTTPStatus
 import hashlib
 import logging
+from io import BytesIO
 logger = logging.getLogger(__name__)
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -168,12 +169,12 @@ class GetThroughputHandler(BaseHandler):
         fig = plt.gcf()
         fig.set_size_inches(12, 8)
         
-        plt.savefig('tornado_throughput.png')
-        with open('tornado_throughput.png', 'rb') as f:
-            content = f.read()
-            # set content type to image/png
-            self.set_header('Content-Type', 'image/png')
-            self.write(content)
+        buf = BytesIO()
+        plt.savefig(buf, format='png')
+        content = buf.read()
+        # set content type to image/png
+        self.set_header('Content-Type', 'image/png')
+        self.write(content)
 
 class GetPacketPlotHandler(BaseHandler):
     def initialize(self, conn):
@@ -187,12 +188,12 @@ class GetPacketPlotHandler(BaseHandler):
         fig = plt.gcf()
         fig.set_size_inches(12, 8)
         
-        plt.savefig('tornado_packet_plot.png')
-        with open('tornado_packet_plot.png', 'rb') as f:
-            content = f.read()
-            # set content type to image/png
-            self.set_header('Content-Type', 'image/png')
-            self.write(content)
+        buf = BytesIO()
+        plt.savefig(buf, format='png')
+        content = buf.read()
+        # set content type to image/png
+        self.set_header('Content-Type', 'image/png')
+        self.write(content)
 
 def main():
     conn = backend.connect_db()

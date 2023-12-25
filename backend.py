@@ -2,10 +2,15 @@ import sqlite3
 import hashlib
 import seaborn
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
+import os
+
+cur_path = os.path.dirname(os.path.abspath(__file__))
 
 def connect_db():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(os.path.join(cur_path, 'database.db'))
     return conn
 
 def create_tables(conn: sqlite3.Connection):
@@ -50,6 +55,7 @@ def login(username, hashed_password, conn: sqlite3.Connection):
 def check_admin(username, conn: sqlite3.Connection):
     # check if user is admin
     c = conn.cursor()
+    print(username)
     c.execute("SELECT * FROM users WHERE username = ? AND is_admin = 1", (username,))
     user = c.fetchone()
     if user is None:

@@ -12,10 +12,10 @@ import backend
 from http import HTTPStatus
 import hashlib
 import argparse
-
+from io import BytesIO
 
 app = Flask(__name__)
-app.config["JWT_SECRET_KEY"] = "test"
+app.config["JWT_SECRET_KEY"] = "test" # replace with your secret key
 flask_cors.CORS(app)
 jwt = JWTManager(app)
 conn = backend.connect_db()
@@ -148,9 +148,10 @@ def get_throughput():
     fig = plt.gcf()
     fig.set_size_inches(12, 8)
     
-    plt.savefig('flask_throughput.png')
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
     # send file to client
-    return send_file('flask_throughput.png', mimetype='image/png')
+    return send_file(buf, mimetype='image/png')
 
 
 # get packet plot
@@ -163,9 +164,10 @@ def get_packet_plot():
     fig = plt.gcf()
     fig.set_size_inches(12, 8)
     
-    plt.savefig('flask_packet_plot.png')
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
     # send file to client
-    return send_file('flask_packet_plot.png', mimetype='image/png')
+    return send_file(buf, mimetype='image/png')
 
 if __name__ == '__main__':    
     parser = argparse.ArgumentParser(prog="flask_interface")

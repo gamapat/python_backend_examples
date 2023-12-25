@@ -4,3 +4,9 @@ Flask-JWT-Extended
 gevent
 requests
 tornado
+Django
+seaborn
+pandas
+djangorestframework
+markdown
+django-filter
