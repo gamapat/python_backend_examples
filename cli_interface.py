@@ -111,11 +111,11 @@ def main():
     # add cli suboption to get info about average packet size
     get_average_parser = subparsers.add_parser(name="get_average", help='get average packet size')
 
-    # add cli suboption to get info about vizualized throughput
-    get_throughput_parser = subparsers.add_parser(name="get_throughput", help='get vizualized throughput')
+    # add cli suboption to get info about visualized throughput
+    get_throughput_parser = subparsers.add_parser(name="get_throughput", help='get visualized throughput')
 
-    # add cli suboption to get info about vizualized packets
-    get_visualized_packets_parser = subparsers.add_parser(name="get_packet_plot", help='get vizualized packets')
+    # add cli suboption to get info about visualized packets
+    get_visualized_packets_parser = subparsers.add_parser(name="get_packet_plot", help='get visualized packets')
 
     conn = sqlite3.connect('database.db')
     add_user_parser.set_defaults(func=partial(add_user, conn=conn))
