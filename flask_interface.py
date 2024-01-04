@@ -120,7 +120,12 @@ def add_packet():
 def query_packets():
     size_range = request.args.get('size_range', "0,10000000000")
     time_range = request.args.get('time_range', "0,10000000000")
-    packets = backend.query_packets(size_range, time_range, conn)
+    username = get_jwt_identity()
+    try:
+        backend.check_admin(username, conn)
+        packets = backend.query_packets_admin(size_range, time_range, conn)
+    except RuntimeError:
+        packets = backend.query_packets_user(username, size_range, time_range, conn)
     packets = [{"packet_id": packet[0], "packet_size": packet[1], "packet_time": packet[2], "user": packet[3]} for packet in packets]
     return jsonify(packets), HTTPStatus.OK
 

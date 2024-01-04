@@ -71,7 +71,6 @@ def remove_user(username, conn: sqlite3.Connection):
     c.execute("DELETE FROM users WHERE username = ?", (username,))
     conn.commit()
 
-
 def list_users(conn: sqlite3.Connection):
     c = conn.cursor()
     c.execute("SELECT * FROM users")
@@ -96,7 +95,15 @@ def add_packet(size, time, username, conn: sqlite3.Connection):
     c.execute("INSERT INTO packets VALUES (?, ?, ?, ?)", (packet_id, size, time, username))
     conn.commit()
 
-def query_packets(size_range, time_range, conn: sqlite3.Connection):
+def query_packets_user(username, size_range, time_range, conn: sqlite3.Connection):
+    size_min, size_max = size_range.split(',')
+    time_min, time_max = time_range.split(',')
+    c = conn.cursor()
+    c.execute("SELECT * FROM packets WHERE packet_size BETWEEN ? AND ? AND packet_time BETWEEN ? AND ? AND user = ?", (size_min, size_max, time_min, time_max, username))
+    packets = c.fetchall()
+    return packets
+
+def query_packets_admin(size_range, time_range, conn: sqlite3.Connection):
     size_min, size_max = size_range.split(',')
     time_min, time_max = time_range.split(',')
     c = conn.cursor()

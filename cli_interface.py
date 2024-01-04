@@ -51,9 +51,13 @@ def add_packet(args, conn: sqlite3.Connection):
 def query_packets(args, conn: sqlite3.Connection):
     size_range = args.size_range
     time_range = args.time_range
-    packets = backend.query_packets(size_range, time_range, conn)
+    try:
+        backend.check_admin(args.login_username, conn)
+        packets = backend.query_packets_admin(size_range, time_range, conn)
+    except RuntimeError:
+        packets = backend.query_packets_user(args.login_username, size_range, time_range, conn)
     # print header of a table
-    print('packet_id\tpacket_size\tpacket_time\tuser')\
+    print('packet_id\tpacket_size\tpacket_time\tuser')
     # print rest of the table
     for packet in packets:
         print(f"{packet[0]}\t{packet[1]}\t{packet[2]}\t{packet[3]}")
