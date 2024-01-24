@@ -22,7 +22,6 @@ print(r.json())
 r = requests.get('http://127.0.0.1:5000/get_throughput', headers={'Authorization': f'Bearer {token}'})
 with open('get_throughput.png', 'wb') as f:
     f.write(r.content)
-
 # packets plot
 r = requests.get('http://127.0.0.1:5000/get_packet_plot', headers={'Authorization': f'Bearer {token}'})
 with open('get_packet_plot.png', 'wb') as f:

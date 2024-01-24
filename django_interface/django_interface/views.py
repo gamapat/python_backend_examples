@@ -198,6 +198,7 @@ def get_throughput(request):
     fig.set_size_inches(12, 8)
     buf = BytesIO() 
     plt.savefig(buf, format="png")
+    buf.seek(0)
     # send file to client
     return HttpResponse(buf, content_type='image/png')
 
@@ -218,6 +219,7 @@ def get_packet_plot(request):
     fig.set_size_inches(12, 8)
     buf = BytesIO() 
     plt.savefig(buf, format="png")
+    buf.seek(0)
     # send file to client
     return HttpResponse(buf, content_type='image/png')
 

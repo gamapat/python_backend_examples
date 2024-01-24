@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify, send_file
-import flask_cors
 from flask_jwt_extended import (
     JWTManager,
     jwt_required,
@@ -16,7 +15,6 @@ from io import BytesIO
 
 app = Flask(__name__)
 app.config["JWT_SECRET_KEY"] = "test" # replace with your secret key
-flask_cors.CORS(app)
 jwt = JWTManager(app)
 conn = backend.connect_db()
 backend.create_tables(conn)
@@ -155,6 +153,7 @@ def get_throughput():
     
     buf = BytesIO()
     plt.savefig(buf, format='png')
+    buf.seek(0)
     # send file to client
     return send_file(buf, mimetype='image/png')
 
@@ -171,6 +170,7 @@ def get_packet_plot():
     
     buf = BytesIO()
     plt.savefig(buf, format='png')
+    buf.seek(0)
     # send file to client
     return send_file(buf, mimetype='image/png')
 

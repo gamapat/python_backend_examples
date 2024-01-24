@@ -12,9 +12,6 @@ def login(args, conn: sqlite3.Connection):
     password = hashlib.sha256(password.encode('utf-8')).hexdigest()
     return backend.login(username, password, conn)
 
-def check_admin(args, conn: sqlite3.Connection):
-    return backend.check_admin(args.login_username, conn)
-
 # add user to database
 def add_user(args, conn: sqlite3.Connection):
     backend.check_admin(args.login_username, conn)

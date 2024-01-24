@@ -7,11 +7,15 @@ from http import HTTPStatus
 import hashlib
 import logging
 from io import BytesIO
+import sys
 logger = logging.getLogger(__name__)
 
 class BaseHandler(tornado.web.RequestHandler):
+    blacklisted_tokens = set()
     def get_current_user(self):
-        return self.get_signed_cookie("username")
+        if self.get_cookie("username") in BaseHandler.blacklisted_tokens:
+            return None
+        return self.get_signed_cookie("username").decode('utf-8')
     
 class LoginHandler(BaseHandler):    
     def initialize(self, conn):
@@ -39,6 +43,7 @@ class LoginHandler(BaseHandler):
 class LogoutHandler(BaseHandler):
     @tornado.web.authenticated
     def delete(self):
+        BaseHandler.blacklisted_tokens.add(self.get_cookie("username"))
         self.clear_cookie("username")
         self.write({"msg": "Successfully logged out"})
 
@@ -176,6 +181,7 @@ class GetThroughputHandler(BaseHandler):
         
         buf = BytesIO()
         plt.savefig(buf, format='png')
+        buf.seek(0)
         content = buf.read()
         # set content type to image/png
         self.set_header('Content-Type', 'image/png')
@@ -195,6 +201,7 @@ class GetPacketPlotHandler(BaseHandler):
         
         buf = BytesIO()
         plt.savefig(buf, format='png')
+        buf.seek(0)
         content = buf.read()
         # set content type to image/png
         self.set_header('Content-Type', 'image/png')

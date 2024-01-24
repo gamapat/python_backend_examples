@@ -55,7 +55,6 @@ def login(username, hashed_password, conn: sqlite3.Connection):
 def check_admin(username, conn: sqlite3.Connection):
     # check if user is admin
     c = conn.cursor()
-    print(username)
     c.execute("SELECT * FROM users WHERE username = ? AND is_admin = 1", (username,))
     user = c.fetchone()
     if user is None:
@@ -128,7 +127,7 @@ def get_packet_plot(conn: sqlite3.Connection) -> plt:
     c = conn.cursor()
     c.execute("SELECT packet_size, packet_time FROM packets")
     packets = c.fetchall()
-    # visuzalize throughput with scatter plot using seaborn
+    # visuzalize throughput with scatter plot
     df = pd.DataFrame(packets, columns=['packet_size', 'packet_time'])
     # set index as pakcet_time
     df.set_index('packet_time', inplace=True)
@@ -141,7 +140,7 @@ def get_throughput(conn: sqlite3.Connection) -> plt:
     c = conn.cursor()
     c.execute("SELECT packet_size, packet_time FROM packets")
     packets = c.fetchall()
-    # visuzalize throughput with line plot using seaborn
+    # visuzalize throughput with line plot
     df = pd.DataFrame(packets, columns=['packet_size', 'packet_time'])
     # set index as pakcet_time
     df.set_index('packet_time', inplace=True)
