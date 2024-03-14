@@ -10,3 +10,4 @@ pandas
 djangorestframework
 markdown
 django-filter
+SQLAlchemy

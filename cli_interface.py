@@ -1,80 +1,83 @@
-import sqlite3
+from sqlalchemy.orm import Session
 import argparse
 from functools import partial
 import backend
 import hashlib
+from model import User, Packet
 
 # check user and password against database
-def login(args, conn: sqlite3.Connection):
-    username = args.login_username
-    password = args.login_password
+def login(args, session: Session):
     # hash password with sha256
-    password = hashlib.sha256(password.encode('utf-8')).hexdigest()
-    return backend.login(username, password, conn)
+    password = hashlib.sha256(args.login_password.encode('utf-8')).hexdigest()
+    user = User(username=args.login_username, password=password)
+    return backend.login(user, session)
 
 # add user to database
-def add_user(args, conn: sqlite3.Connection):
-    backend.check_admin(args.login_username, conn)
-    username = args.username
-    password = args.password
-    # hash password with sha256
-    password = hashlib.sha256(password.encode('utf-8')).hexdigest()
-    backend.add_user(username, password, conn)
+def add_user(args, session: Session):
+    login_user = User(username=args.login_username, password='', is_admin=0)
+    backend.check_admin(login_user, session)
+    password = hashlib.sha256(args.password.encode('utf-8')).hexdigest()
+    user = User(username=args.username, password=password)
+    backend.add_user(user, session)
     print("User added")
 
 
-def remove_user(args, conn: sqlite3.Connection):
-    backend.check_admin(args.login_username, conn)
-    backend.remove_user(args.username, conn)
+def remove_user(args, session: Session):
+    login_user = User(username=args.login_username, password='')
+    backend.check_admin(login_user, session)
+    user = User(username=args.username, password='')
+    backend.remove_user(user, session)
     print("User removed")
 
 
-def list_users(args, conn: sqlite3.Connection):
-    backend.check_admin(args.login_username, conn)
-    users = backend.list_users(conn)
+def list_users(args, session: Session):
+    login_user = User(username=args.login_username, password='')
+    backend.check_admin(login_user, session)
+    users = backend.list_users(session)
     # print header of a table
     print('username\tpassword\tis_admin')
     # print users in a nice format
     for user in users:
-        print(f"{user[0]}\t{user[1]}\t{user[2]}")
+        print(f"{user.username}\t{user.password}\t{user.is_admin}")
 
-def add_packet(args, conn: sqlite3.Connection):
-    size = args.size
-    time = args.time
-    username = args.login_username
-    backend.add_packet(size, time, username, conn)
+def add_packet(args, session: Session):
+    packet = Packet(size=args.size, time=args.time, username=args.login_username)
+    backend.add_packet(packet, session)
     print("Packet added")
 
-def query_packets(args, conn: sqlite3.Connection):
+def query_packets(args, session: Session):
     size_range = args.size_range
     time_range = args.time_range
+    login_user = User(username=args.login_username, password='')
     try:
-        backend.check_admin(args.login_username, conn)
-        packets = backend.query_packets_admin(size_range, time_range, conn)
+        backend.check_admin(login_user, session)
+        packets = backend.query_packets_admin(size_range, time_range, session)
     except RuntimeError:
-        packets = backend.query_packets_user(args.login_username, size_range, time_range, conn)
+        packets = backend.query_packets_user(login_user, size_range, time_range, session)
     # print header of a table
     print('packet_id\tpacket_size\tpacket_time\tuser')
     # print rest of the table
     for packet in packets:
-        print(f"{packet[0]}\t{packet[1]}\t{packet[2]}\t{packet[3]}")
+        print(f"{packet.packet_id}\t{packet.size}\t{packet.time}\t{packet.username}")
 
-def get_total(args, conn: sqlite3.Connection):
-    total_packets, total_size = backend.get_total(conn)
+def get_total(args, session: Session):
+    total_packets, total_size = backend.get_total(session)
     print(f'total packets: {total_packets}')
     print(f'total size: {total_size}')
 
-def get_average(args, conn: sqlite3.Connection):
-    average = backend.get_average(conn)
+def get_average(args, session: Session):
+    average = backend.get_average(session)
     print(f'average packet size: {average}')
 
-def get_throughput(args, conn: sqlite3.Connection):
-    local_plt = backend.get_throughput(conn)
-    local_plt.show()
+def get_throughput(args, session: Session):
+    local_plt = backend.get_throughput(session)
+    # save to local file
+    local_plt.savefig('cli_throughput.png')
     
-def get_packet_plot(args, conn: sqlite3.Connection):
-    local_plt = backend.get_packet_plot(conn)
-    local_plt.show()
+def get_packet_plot(args, session: Session):
+    local_plt = backend.get_packet_plot(session)
+    # save to local file
+    local_plt.savefig('cli_packets.png')
 
 def main():
     # add cli option to login
@@ -104,7 +107,7 @@ def main():
     # add cli suboption to query packets based on min max time and min max size
     query_packets_parser = subparsers.add_parser(name="query_packets", help='query packets')
     query_packets_parser.add_argument("-s", "--size_range", help="packet size; format: min,max", default='0,1000000000')
-    query_packets_parser.add_argument("-t", "--time_range", help="packet time; format: min,max", default='0,1000000000')
+    query_packets_parser.add_argument("-t", "--time_range", help="packet time; format: min,max", default='0,2000000000')
 
     # add cli suboption to get info about total package count/size
     get_total_parser = subparsers.add_parser(name="get_total", help='get total package count/size')
@@ -118,23 +121,23 @@ def main():
     # add cli suboption to get info about visualized packets
     get_visualized_packets_parser = subparsers.add_parser(name="get_packet_plot", help='get visualized packets')
 
-    conn = sqlite3.connect('database.db')
-    add_user_parser.set_defaults(func=partial(add_user, conn=conn))
-    remove_user_parser.set_defaults(func=partial(remove_user, conn=conn))
-    list_users_parser.set_defaults(func=partial(list_users, conn=conn))
-    add_packet_parser.set_defaults(func=partial(add_packet, conn=conn))
-    query_packets_parser.set_defaults(func=partial(query_packets, conn=conn))
-    get_total_parser.set_defaults(func=partial(get_total, conn=conn))
-    get_average_parser.set_defaults(func=partial(get_average, conn=conn))
-    get_throughput_parser.set_defaults(func=partial(get_throughput, conn=conn))
-    get_visualized_packets_parser.set_defaults(func=partial(get_packet_plot, conn=conn))
+    with backend.get_session() as session:
+        add_user_parser.set_defaults(func=partial(add_user, session=session))
+        remove_user_parser.set_defaults(func=partial(remove_user, session=session))
+        list_users_parser.set_defaults(func=partial(list_users, session=session))
+        add_packet_parser.set_defaults(func=partial(add_packet, session=session))
+        query_packets_parser.set_defaults(func=partial(query_packets, session=session))
+        get_total_parser.set_defaults(func=partial(get_total, session=session))
+        get_average_parser.set_defaults(func=partial(get_average, session=session))
+        get_throughput_parser.set_defaults(func=partial(get_throughput, session=session))
+        get_visualized_packets_parser.set_defaults(func=partial(get_packet_plot, session=session))
 
-    backend.create_tables(conn)
-    backend.add_admin(conn)
+        backend.create_tables()
+        backend.add_admin(session)
 
-    args = parser.parse_args()
-    login(args, conn)
-    args.func(args)
+        args = parser.parse_args()
+        login(args, session)
+        args.func(args)
 
 if __name__ == '__main__':
     main()
