@@ -1,6 +1,6 @@
 import jwt
 import datetime
-
+import model
 
 SECRET_KEY = 'test'  # replace with your secret key
 
@@ -30,4 +30,4 @@ def get_user(request: 'django.http.request.HttpRequest'):
     if datetime.datetime.utcnow() > datetime.datetime.fromtimestamp(exp):
         raise RuntimeError('Token expired')
     username = payload.get('username')
-    return username
+    return model.User(username=username)
